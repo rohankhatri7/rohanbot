@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.pytest_cache/
+.mypy_cache/
+.venv
+venv/
+ENV/
+
+# Node
+node_modules/
+package-lock.json
+package.json
+
+# Environment variables
+.env
+bot/.env
+
+# Project specific
+bot/node_modules/
+api/__pycache__/
+api/.venv
+bot/package-lock.json
+bot/package.json
+data/Messages/
+finetune_output/combined_training_data.jsonl
+ollama-finetuned/
+wandb/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+
+# Mac OS
+.DS_Store
+
+# IDE specific files
+.idea/
+*.swp
+*.swo

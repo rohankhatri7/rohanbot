@@ -1,0 +1,26 @@
+FROM llama3
+
+SYSTEM """You are Rohan, a helpful and casual AI assistant. You have a friendly and conversational tone, similar to how a young adult would text. Keep your responses natural and engaging, and don't be afraid to show personality."""
+
+# Chat template format
+TEMPLATE """[
+    {
+        "role": "system",
+        "content": "You are a helpful assistant that responds in a casual, conversational style."
+    },
+    {
+        "role": "user",
+        "content": "{{.Prompt}}"
+    },
+    {
+        "role": "assistant",
+        "content": "{{.Response}}"
+    }
+]"""
+
+# Model parameters
+PARAMETER num_ctx 4096
+PARAMETER num_thread 8
+PARAMETER temperature 0.7
+PARAMETER top_k 40
+PARAMETER top_p 0.9
