@@ -1,7 +1,6 @@
-// bot/index.js
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = require('node-fetch').default;  // Updated this line
 
 const client = new Client({ 
     intents: [
@@ -11,103 +10,84 @@ const client = new Client({
     ] 
 });
 
-const API_URL = 'http://localhost:8000/api/chat';
+// API configuration
+const API_URL = "http://localhost:8000/api/chat";
 
-client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+client.once('ready', () => {
+    console.log(`🤖 Logged in as ${client.user.tag}!`);
 });
 
 client.on('messageCreate', async (message) => {
     // Don't respond to bots or messages without mentions
     if (message.author.bot) return;
     if (!message.mentions.has(client.user.id)) return;
-
+    
     const prompt = message.content.replace(`<@${client.user.id}>`, '').trim();
     if (!prompt) return;
-
+    
     try {
-        // Send initial "typing" indicator
+        // Show typing indicator
         await message.channel.sendTyping();
-        const reply = await message.reply('Thinking...');
         
-        const apiUrl = API_URL;
-        console.log('Sending request to:', apiUrl);
-        
-        let responseText = ''; // Moved to top of try block for better scoping
-        
-        const response = await fetch(apiUrl, {
+        console.log('Sending request to API...');
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'text/event-stream'
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
-                content: prompt
+                messages: [
+                    { role: 'system', content: 'You are a helpful assistant.' },
+                    { role: 'user', content: prompt }
+                ]
             })
         });
 
         console.log('Response status:', response.status);
-
+        
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`API request failed: ${response.status} ${response.statusText}\n${errorText}`);
+            console.error('API Error:', errorText);
+            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
         }
 
-        // Ensure we have a readable stream
-        if (!response.body) {
-            throw new Error('Response body is not a readable stream');
-        }
+        const data = await response.json();
+        console.log('API Response:', JSON.stringify(data, null, 2));
         
-        // Use node-fetch's built-in streaming
-        response.body.on('data', async (chunk) => {
-            const text = chunk.toString();
-            const lines = text.split('\n').filter(line => line.trim() !== '');
+        // Clean up and send the response back to Discord
+        if (data.response) {
+            // Clean up the response
+            let cleanResponse = data.response
+                .replace(/^<\|assistant\|>\s*/, '')  // Remove <|assistant|> from start
+                .replace(/<\|[^>]+\|>/g, '')         // Remove any other <|...|> tags
+                .trim();
             
-            for (const line of lines) {
-                try {
-                    const trimmedLine = line.trim();
-                    if (!trimmedLine || trimmedLine === 'data: [DONE]') continue;
-                    
-                    const jsonStr = trimmedLine.startsWith('data: ') ? 
-                        trimmedLine.slice(6).trim() : trimmedLine;
-                    
-                    const data = JSON.parse(jsonStr);
-                    if (data.response) {
-                        responseText += data.response;
-                        // Update the message with the latest response
-                        if (responseText.trim()) {
-                            await reply.edit(responseText);
-                        }
+            // Split message if it's too long for Discord
+            if (cleanResponse.length > 2000) {
+                const chunks = cleanResponse.match(/[\s\S]{1,1900}[\n.?!]|[\s\S]{1,2000}/g) || [cleanResponse];
+                for (const chunk of chunks) {
+                    if (chunk.trim()) {  // Only send non-empty chunks
+                        await message.reply(chunk);
+                        // Add a small delay to avoid rate limiting
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                     }
-                } catch (e) {
-                    console.error('Error processing line:', line);
-                    console.error('Error details:', e);
                 }
+            } else if (cleanResponse.trim()) {  // Only send non-empty responses
+                await message.reply(cleanResponse);
+            } else {
+                await message.reply("I'm here! How can I assist you?");
             }
-        });
-        
-        // Handle stream end
-        response.body.on('end', () => {
-            console.log('Stream ended');
-        });
-        
-        // Handle errors
-        response.body.on('error', (error) => {
-            console.error('Stream error:', error);
-            reply.edit('Sorry, there was an error processing your request.');
-        });
-        
-        // Response handling is now done via event listeners
-        // responseText is already declared at the top of the try block
+        } else {
+            throw new Error('No response from model');
+        }
     } catch (error) {
         console.error('Error:', error);
-        try {
-            await message.reply(`Sorry, I encountered an error: ${error.message}`);
-        } catch (e) {
-            console.error('Failed to send error message:', e);
-        }
+        await message.reply(`Sorry, I encountered an error: ${error.message}`);
     }
 });
 
-// Start the bot
-client.login(process.env.DISCORD_BOT_TOKEN);
+// Login to Discord
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => console.log('Bot is connecting to Discord...'))
+    .catch(console.error);

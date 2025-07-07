@@ -19,6 +19,7 @@ package.json
 bot/.env
 
 # Project specific
+models/
 bot/node_modules/
 api/__pycache__/
 api/.venv
