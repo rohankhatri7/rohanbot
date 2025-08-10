@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'RohanAI Discord Bot Infrastructure'
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues: [t3.small, t3.medium, t3.large, t3.xlarge]
+    Description: EC2 instance type for the application
+
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+
+  AllowedSSHCIDR:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR block allowed to SSH to the instance (restrict this!)
+
+Resources:
+  # Security Group
+  RohanAISecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RohanAI application
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedSSHCIDR
+          Description: SSH access
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS access
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+          Description: API direct access
+      Tags:
+        - Key: Name
+          Value: RohanAI-SecurityGroup
+
+  # IAM Role for EC2 instance
+  RohanAIRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Tags:
+        - Key: Name
+          Value: RohanAI-Role
+
+  # Instance Profile
+  RohanAIInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref RohanAIRole]
+
+  # EC2 Instance
+  RohanAIInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-014e30c8a36252ae5  # Ubuntu Server 24.04 LTS (HVM), EBS General Purpose (SSD)
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds: [!Ref RohanAISecurityGroup]
+      IamInstanceProfile: !Ref RohanAIInstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install -y awscli curl wget
+          
+          # Download and run deployment script
+          cd /home/ubuntu
+          wget https://raw.githubusercontent.com/rohankhatri7/rohanbot/main/deployment/deploy-aws.sh
+          chmod +x deploy-aws.sh
+          
+          # Create a simple status file
+          echo "RohanAI deployment started at $(date)" > /home/ubuntu/deployment-status.txt
+          echo "AMI: Ubuntu Server 24.04 LTS (ami-014e30c8a36252ae5)" >> /home/ubuntu/deployment-status.txt
+          
+      Tags:
+        - Key: Name
+          Value: RohanAI-Instance
+
+  # Elastic IP
+  RohanAIElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref RohanAIInstance
+      Tags:
+        - Key: Name
+          Value: RohanAI-EIP
+
+Outputs:
+  InstanceId:
+    Description: Instance ID of the RohanAI server
+    Value: !Ref RohanAIInstance
+
+  PublicIP:
+    Description: Public IP address of the RohanAI server
+    Value: !Ref RohanAIElasticIP
+
+  SSHCommand:
+    Description: SSH command to connect to the instance
+    Value: !Sub 'ssh -i ${KeyPairName}.pem ubuntu@${RohanAIElasticIP}'
+
+  APIEndpoint:
+    Description: API endpoint URL
+    Value: !Sub 'http://${RohanAIElasticIP}:8000'
+
+  WebInterface:
+    Description: Web interface URL
+    Value: !Sub 'http://${RohanAIElasticIP}'

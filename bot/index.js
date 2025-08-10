@@ -10,11 +10,12 @@ const client = new Client({
     ] 
 });
 
-// API configuration
-const API_URL = "http://localhost:8000/api/chat";
+// API configuration - Use environment variable with fallback
+const API_URL = process.env.API_URL || "http://localhost:8000/api/chat";
 
 client.once('ready', () => {
-    console.log(`🤖 Logged in as ${client.user.tag}!`);
+    console.log(`🤖 RohanAI logged in as ${client.user.tag}!`);
+    console.log(`🔗 Connected to API at: ${API_URL}`);
 });
 
 client.on('messageCreate', async (message) => {
