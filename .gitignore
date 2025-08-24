@@ -1,3 +1,10 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
 # Python
 __pycache__/
 *.py[cod]
@@ -5,41 +12,106 @@ __pycache__/
 .python-version
 .pytest_cache/
 .mypy_cache/
-.venv
+.venv/
 venv/
 ENV/
-
-# Node
-node_modules/
-package-lock.json
-package.json
-
-# Environment variables
-.env
-bot/.env
-
-# Project specific
-models/
-bot/node_modules/
+env/
 api/__pycache__/
-api/.venv
+api/.venv/
+*.pyc
+*.pyo
+*.pyd
+.coverage
+htmlcov/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+bot/node_modules/
 bot/package-lock.json
-bot/package.json
+
+# Models and Training Data
+models/
+*.bin
+*.safetensors
+*.ckpt
+*.pt
+*.pth
 data/Messages/
-finetune_output/combined_training_data.jsonl
+data/processed/
+finetune_output/
 ollama-finetuned/
+training_data/
+checkpoints/
+
+# Logs and Monitoring
+logs/
+*.log
 wandb/
+.wandb/
+mlruns/
+tensorboard_logs/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# Docker
+.dockerignore
+docker-compose.override.yml
 
-# VS Code
+# IDE and Editors
 .vscode/
-
-# Mac OS
-.DS_Store
-
-# IDE specific files
 .idea/
 *.swp
 *.swo
+*~
+.sublime-*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Deployment
+deployment/ssl/
+deployment/*.pem
+deployment/*.key
