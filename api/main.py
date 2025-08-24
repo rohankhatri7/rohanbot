@@ -41,15 +41,15 @@ async def load_model():
     try:
         model_path = os.getenv("MODEL_PATH", "./models/tinyllama-finetuned")
         base_model = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-        
-        print("🚀 Starting RohanAI API...")
-        print(f"📍 Model path: {model_path}")
-        
+
+        print("Starting RohanAI API...")
+        print(f"Model path: {model_path}")
+
         print("Loading tokenizer...")
         tokenizer = AutoTokenizer.from_pretrained(base_model)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
-        
+
         print("Loading base model...")
         model = AutoModelForCausalLM.from_pretrained(
             base_model,
@@ -57,22 +57,22 @@ async def load_model():
             device_map="cpu",  # Use CPU for stable deployment
             trust_remote_code=True
         )
-        
+
         # Try to load fine-tuned weights if available
         if os.path.exists(model_path):
             print("Loading fine-tuned PEFT adapter...")
             model = PeftModel.from_pretrained(model, model_path)
             model = model.merge_and_unload()
-            print("✅ Fine-tuned model loaded successfully!")
+            print("Fine-tuned model loaded successfully!")
         else:
-            print(f"⚠️  Fine-tuned model not found at {model_path}, using base model")
-        
+            print(f"Fine-tuned model not found at {model_path}, using base model")
+
         model.eval()
-        print("✅ RohanAI API is ready!")
-        
+        print("RohanAI API is ready!")
+
     except Exception as e:
-        print(f"❌ Error loading model: {str(e)}")
-        print("⚠️  API will use fallback responses")
+        print(f"Error loading model: {str(e)}")
+        print("API will use fallback responses")
         model = None
         tokenizer = None
 

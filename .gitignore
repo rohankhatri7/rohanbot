@@ -115,3 +115,6 @@ coverage.xml
 deployment/ssl/
 deployment/*.pem
 deployment/*.key
+
+finetune_output/
+data/
